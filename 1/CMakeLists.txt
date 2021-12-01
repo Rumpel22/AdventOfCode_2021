@@ -1,5 +1,6 @@
 add_library (dec_1Lib OBJECT
     main.cpp
+    input_1.h
 )
 
 add_executable (dec_1)
