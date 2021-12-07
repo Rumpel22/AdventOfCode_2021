@@ -1,29 +1,34 @@
 #include "input_6.h"
 
 #include <iostream>
+#include <array>
+#include <numeric>
+
+using FishCounterPerAge = std::array<unsigned long long, 9>;
 
 int main(int, char **)
 {
-    for (unsigned int day = 1; day <= 80; day++)
+    FishCounterPerAge fishesPerAge = {};
+    for (const int fish : lanternFishes)
     {
-        std::vector<int> newFishes;
-        for (auto &fish : lanternFishes)
-        {
-            if (fish == 0)
-            {
-                fish = 6;
-                newFishes.push_back(8);
-            }
-            else
-            {
-                fish--;
-            }
-        }
-        lanternFishes.insert(lanternFishes.end(), newFishes.begin(), newFishes.end());
+        fishesPerAge[fish]++;
+    }
 
+    for (unsigned int day = 1; day <= 256; day++)
+    {
+        FishCounterPerAge fishesPerAge_new = {};
+        for (int i = 1; i <= 8; i++)
+        {
+            fishesPerAge_new[i - 1] = fishesPerAge[i];
+        }
+        fishesPerAge_new[6] += fishesPerAge[0];
+        fishesPerAge_new[8] = fishesPerAge[0];
+
+        fishesPerAge = fishesPerAge_new;
         if (day == 80 || day == 256)
         {
-            std::cout << "Lanternfishes after " << day << " days: " << lanternFishes.size() << std::endl;
+            unsigned long long nbFishes = std::accumulate(fishesPerAge.begin(), fishesPerAge.end(), 0ull);
+            std::cout << "Lanternfishes after " << day << " days: " << nbFishes << std::endl;
         }
     }
 }
