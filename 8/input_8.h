@@ -7,7 +7,7 @@ using input = std::array<const char *, 10>;
 using output = std::array<const char *, 4>;
 using line = std::pair<input, output>;
 
-std::vector<line> lines = {
+/* std::vector<line> lines = {
     {{"be", "cfbegad", "cbdgef", "fgaecd", "cgeb", "fdcge", "agebfd", "fecdb", "fabcd", "edb"},
      {"fdgacbe", "cefdb", "cefbgd", "gcbe"}},
     {{"edbfga", "begcd", "cbg", "gc", "gcadebf", "fbgde", "acbgfd", "abcde", "gfcbed", "gfec"},
@@ -27,9 +27,9 @@ std::vector<line> lines = {
     {{"egadfb", "cdbfeg", "cegd", "fecab", "cgb", "gbdefca", "cg", "fgcdab", "egfdb", "bfceg"},
      {"gbdfcae", "bgc", "cg", "cgb"}},
     {{"gcafb", "gcf", "dcaebfg", "ecagb", "gf", "abcdeg", "gaef", "cafbge", "fdbac", "fegbdc"},
-     {"fgae", "cfgab", "fg", "bagce"}}};
+     {"fgae", "cfgab", "fg", "bagce"}}}; */
 
-/* std::vector<line> lines = {
+std::vector<line> lines = {
     {{"bgcfda", "gecbda", "abdgf", "aedfbg", "eda", "efcbd", "ae", "agfe", "bdefagc", "fbeda"}, {"ae", "egdafb", "ea", "fcdeb"}},
     {{"gfadb", "fbagcd", "cagf", "agecdb", "adg", "fdbcg", "bdcfaeg", "bcgfde", "ga", "efbda"}, {"cbfdge", "dfcebga", "aedcgb", "dgbfa"}},
     {{"bgdeca", "agdbe", "gfb", "fdbgce", "bf", "eafb", "dfgab", "efbgdca", "gebafd", "dgcaf"}, {"gfbdea", "gfb", "bacedg", "adcgf"}},
@@ -229,4 +229,4 @@ std::vector<line> lines = {
     {{"bafdgce", "cea", "gdbcfe", "ae", "agecd", "agcdbe", "ebfcad", "agbe", "bcdeg", "fgadc"}, {"cebgad", "ecbgd", "cbdeg", "gaeb"}},
     {{"bgce", "agefcbd", "egbcfa", "eg", "fadgb", "bfcae", "dfbcae", "egfab", "gae", "fdcega"}, {"age", "gafcbe", "eacfbg", "gea"}},
     {{"fgacde", "gfaedb", "ebacf", "gc", "gdfc", "dcbeafg", "fadge", "gec", "bdcgea", "cgfea"}, {"fdagcbe", "gfdc", "aefgcbd", "gc"}},
-    {{"gb", "acfdgb", "bga", "aedgf", "bafdg", "abdfecg", "gacfeb", "bgdc", "bfcad", "fcedba"}, {"fgaecbd", "dabcf", "bcdg", "bg"}}}; */
+    {{"gb", "acfdgb", "bga", "aedgf", "bafdg", "abdfecg", "gacfeb", "bgdc", "bfcad", "fcedba"}, {"fgaecbd", "dabcf", "bcdg", "bg"}}};
