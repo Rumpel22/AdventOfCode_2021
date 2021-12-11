@@ -32,6 +32,7 @@ char getClosingChar(char c)
 int main(int, char **)
 {
     std::vector<char> illegalChars;
+    std::vector<unsigned long long> missingCharPoints;
     for (const auto &line : lines)
     {
         std::stack<char> chars;
@@ -50,9 +51,41 @@ int main(int, char **)
                 else
                 {
                     illegalChars.push_back(c);
+                    std::stack<char> empty;
+                    chars.swap(empty);
                     break;
                 }
             }
+        }
+        if (!chars.empty())
+        {
+            unsigned long long missingPoints = 0;
+            while (!chars.empty())
+            {
+                char c = chars.top();
+                chars.pop();
+                unsigned int charPoints;
+                switch (getClosingChar(c))
+                {
+                case ')':
+                    charPoints = 1;
+                    break;
+                case ']':
+                    charPoints = 2;
+                    break;
+                case '}':
+                    charPoints = 3;
+                    break;
+                case '>':
+                    charPoints = 4;
+                    break;
+                default:
+                    assert(false);
+                    charPoints = 0;
+                }
+                missingPoints = 5 * missingPoints + charPoints;
+            }
+            missingCharPoints.push_back(missingPoints);
         }
     }
     std::vector<unsigned int> points;
@@ -75,4 +108,8 @@ int main(int, char **)
                    });
     unsigned int total = std::accumulate(std::begin(points), std::end(points), 0u);
     std::cout << "Total syntax error points: " << total << std::endl;
+
+    std::sort(std::begin(missingCharPoints), std::end(missingCharPoints));
+    unsigned long long middleCharPoints = missingCharPoints[missingCharPoints.size() / 2];
+    std::cout << "Middle score of missing characters: " << middleCharPoints << std::endl;
 }
