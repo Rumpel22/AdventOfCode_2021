@@ -8,7 +8,7 @@ struct Map
     const size_t width;
     const size_t height;
 
-    Map(size_t x, size_t y) : width(x), height(y), map((y + 1) * (x + 1), 0) {}
+    Map(size_t x, size_t y) : width(x), height(y), map(x * y, 0) {}
 
     int &get(size_t x, size_t y)
     {
@@ -42,7 +42,7 @@ Map parseMap(const Coordinates &coordinates)
                                       { return a.second < b.second; }))
                        .second;
 
-    Map map = Map(max_x, max_y);
+    Map map = Map(max_x + 1, max_y + 1);
 
     for (auto [x, y] : coordinates)
     {
@@ -65,21 +65,22 @@ int main(int, char **)
         const size_t new_y = fold.first == 'y' ? fold.second : old_y;
 
         Map newMap(new_x, new_y);
-        for (size_t y = 0; y < old_y; ++y)
+        int inc_y = 1;
+        for (size_t y = 0, set_y = 0; y < old_y; ++y, set_y += inc_y)
         {
             if (fold.first == 'y' && y == new_y)
             {
+                inc_y = -1;
                 continue;
             }
-
-            size_t set_y = (y < new_y ? y : new_y - (y - new_y));
-            for (size_t x = 0; x < old_x; ++x)
+            int inc_x = 1;
+            for (size_t x = 0, set_x = 0; x < old_x; ++x, set_x += inc_x)
             {
                 if (fold.first == 'x' && x == new_x)
                 {
+                    inc_x = -1;
                     continue;
                 }
-                size_t set_x = (x < new_x ? x : new_x - (x - new_x));
                 newMap.get(set_x, set_y) |= map.get(x, y);
             }
         }
