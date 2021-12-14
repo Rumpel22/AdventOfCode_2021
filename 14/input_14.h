@@ -2,11 +2,11 @@
 #include <string>
 #include <map>
 
-const std::string polymer_template = "NNCB";
-// const std::string polymer_template = "SHPPPVOFPBFCHHBKBNCV";
+// const std::string polymer_template = "NNCB";
+const std::string polymer_template = "SHPPPVOFPBFCHHBKBNCV";
 
 const std::map<std::string, char> insertions = {
-    {"CH", 'B'},
+    /* {"CH", 'B'},
     {"HH", 'N'},
     {"CB", 'H'},
     {"NH", 'C'},
@@ -21,9 +21,9 @@ const std::map<std::string, char> insertions = {
     {"BB", 'N'},
     {"BC", 'B'},
     {"CC", 'N'},
-    {"CN", 'C'},
+    {"CN", 'C'}, */
 
-    /* {"HK", 'C'},
+    {"HK", 'C'},
     {"SP", 'H'},
     {"VH", 'K'},
     {"KS", 'B'},
@@ -122,5 +122,5 @@ const std::map<std::string, char> insertions = {
     {"KP", 'S'},
     {"OP", 'N'},
     {"KH", 'P'},
-    {"VN", 'H'}, */
+    {"VN", 'H'},
 };
