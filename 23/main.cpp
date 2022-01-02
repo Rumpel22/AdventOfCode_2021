@@ -3,12 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <iostream>
-#include <iomanip>
-#include <map>
-#include <numeric>
-#include <cassert>
-#include <queue>
-#include <set>
+#include <optional>
 
 static const std::array<int, 4> costPerMove = {
     1,    // A
@@ -28,8 +23,8 @@ enum Antipod
 // The positions
 // "###################################",
 // "# 0  1  2  3  4  5  6  7  8  9  10#",
-// "#######11####13####15####17########",
-// "      #12####14####16####18#  ",
+// "#######12####14####16####18########",
+// "      #22####24####26####28#  ",
 // "      ######################",
 
 using Position = int;
@@ -45,7 +40,9 @@ struct Situation
 {
     // A1, A2, B1, B2, C1, C2, D1, D2
     std::array<Position, 8> antipods;
-    unsigned int cost = 0;
+    int cost = 0;
+
+    auto operator<=>(const Situation &rhs) const = default;
 
     Situation(const std::vector<std::string> &situation_string)
     {
@@ -57,26 +54,11 @@ struct Situation
             for (int y = 0; y < 2; ++y)
             {
                 int podType = situation_string[y + 2][x * 2 + 3] - 'A';
-                antipods[podType * 2 + foundOfType[podType]] = x * 2 + y + 11;
+                antipods[podType * 2 + foundOfType[podType]] = (y + 1) * 10 + (x + 1) * 2;
                 foundOfType[podType]++;
             }
         }
     }
-
-    // std::array<Antipod, 8> getAntipods() const
-    // {
-    //     std::array<Antipod, 8> antipods;
-    //     auto iter = std::begin(antipods);
-    //     for (auto &field : fields)
-    //     {
-    //         if (field.second != '.')
-    //         {
-    //             *iter++ = &field;
-    //         }
-    //     }
-    //     assert(iter == std::end(antipods));
-    //     return antipods;
-    // }
 
     static bool isRoom(const Position &position)
     {
@@ -90,22 +72,21 @@ struct Situation
 
     static int getRoomNumber(const Position &position)
     {
-        return (isRoom(position) ? (position - 11) / 2 : -1);
+        return (isRoom(position) ? ((position % 10) / 2 - 1) : -1);
     }
 
-    static bool isHallway(const Position &position)
+    static Situation applyMove(const Situation &situation, const Move &move)
     {
-        return !isRoom(position);
+        Situation newSituation(situation);
+        const Position start = situation.antipods[move.index];
+        newSituation.antipods[move.index] = move.end;
+        newSituation.cost += Situation::countMoves(start, move.end) * costPerMove[move.index / 2];
+        return newSituation;
     }
 
     bool isInOwnRoom(const AntipodIndex &antipod) const
     {
         return isRoom(antipods[antipod], antipod / 2);
-    }
-
-    bool isInHallway(const AntipodIndex &antipod) const
-    {
-        return isHallway(antipods[antipod]);
     }
 
     bool isFinal() const
@@ -141,176 +122,153 @@ struct Situation
         }
         if (isRoom(start))
         {
-            if (getRoomNumber(start) != getRoomNumber(end))
-            {
-                // Move to other room, in direction of the hallway
-                Position newPosition = (start % 2 == 0 ? start - 1 : start - 9);
-                return isEmpty(newPosition) && isWayFree(newPosition, end);
-            }
-            else
-            {
-                // Move within room
-                Position newPosition = (start % 2 == 0 ? start - 1 : start + 1);
-                ;
-                return isEmpty(newPosition) && isWayFree(newPosition, end);
-            }
-        }
-        if (isHallway(end))
-        {
-            // Move within hallway
-            Position newPosition = start + (end < start ? -1 : 1);
+            // Move vertical in room
+            Position newPosition = start;
+            newPosition += (start % 10 == end % 10 ? 10 : -10);
             return isEmpty(newPosition) && isWayFree(newPosition, end);
         }
-        if (start + 9 + (end % 2 == 0) == end)
+        if (start % 10 == end % 10)
         {
             // Step into room
-            Position newPosition = start + 9;
+            Position newPosition = start + 10;
             return isEmpty(newPosition) && isWayFree(newPosition, end);
         }
         // Move in the hallway in the direction of the end room
-        Position newPosition = start + (start + 9 >= end ? -1 : 1);
+        Position newPosition = start + (start >= end % 10 ? -1 : 1);
+        if (end == 10)
+        {
+            newPosition += 2;
+        }
         return isEmpty(newPosition) && isWayFree(newPosition, end);
-    }
-
-    bool canMove(const Position &start, const Position &end, Antipod antipod) const
-    {
-        if (start == end)
-        {
-            // illegal move
-            return false;
-        }
-        if (isHallway(start) && isHallway(end))
-        {
-            // no move within hallway
-            return false;
-        }
-        if (!isWayFree(start, end))
-        {
-            // way is not free
-            return false;
-        }
-        if (!isRoom(end, antipod) && !isHallway(end))
-        {
-            // Move only in own room or hallway
-            return false;
-        }
-        if (isRoom(start, antipod))
-        {
-            if (start % 2 == 0)
-            {
-                // Don't move if already at the bottom
-                return false;
-            }
-            // start in own room
-            if (isEmpty(start + start % 2) && end != (start + start % 2))
-            {
-                // Don't step out from own room if second place is free (=> move down!)
-                return false;
-            }
-            if (antipods[antipod * 2] == start + 1 || antipods[antipod * 2 + 1] == start + 1)
-            {
-                // Don't step out of room if both places are covered with correct antipod
-                return false;
-            }
-            // Move out of room to let the second antipod pass by
-        }
-        if (isRoom(end) && getOccupy(end + end % 2) != antipod && getOccupy(end + end % 2) != -1)
-        {
-            // Don't step in occupied room
-            return false;
-        }
-        if (isRoom(start) && end == start - 9 - (start % 2 == 0))
-        {
-            // Don't stop on the field directly outside the starting room
-            return false;
-        }
-        return true;
     }
 
     static int countMoves(const Position &start, const Position &end)
     {
-        int result = 0;
-        if (isHallway(start))
+        const int wayToHallway = start / 10;
+        const int wayIntoRoom = end / 10;
+        int wayInHallway = std::abs((start % 10) - (end % 10));
+        if (start == 10 || end == 10)
         {
-            result += std::abs(start - (end - 9 - (end % 2 == 0))) + (1 + (end % 2 == 0));
+            wayInHallway++;
         }
-        else if (isHallway(end))
-        {
-            result += std::abs(end - (start - 9 - (start % 2 == 0))) + (1 + (start % 2 == 0));
-        }
-        else
-        {
-            result += 1 + (start % 2 == 0);
-            result += 1 + (end % 2 == 0);
-            int x1 = (start - 9) - (start % 2 == 0);
-            int x2 = (end - 9) - (end % 2 == 0);
-            result += std::abs(x1 - x2);
-        }
-        return result;
+        return wayToHallway + wayInHallway + wayIntoRoom;
     }
 
-    std::vector<Move> getNextMoves() const
+    bool reachedFinal(AntipodIndex antipodIndex) const
     {
-        std::vector<Move> nextMoves;
-        for (AntipodIndex antipod = 0; antipod < antipods.size(); ++antipod)
+        if (isInOwnRoom(antipodIndex))
         {
-            const Position &start = antipods[antipod];
-            for (Position end = 0; end < 19; ++end)
+            Position position = antipods[antipodIndex];
+            int spotInRoom = position / 10;
+            if (spotInRoom == 2)
             {
-                if (canMove(start, end, static_cast<Antipod>(antipod / 2)))
+                return true;
+            }
+            AntipodIndex otherAntipodIndex = (antipodIndex % 2 == 0 ? antipodIndex + 1 : antipodIndex - 1);
+            return isInOwnRoom(otherAntipodIndex);
+        }
+        return false;
+    }
+
+    std::optional<Move> getGoGoals() const
+    {
+        for (int room = 0; room < antipods.size() / 2; ++room)
+        {
+            for (int spot = 2; spot > 0; --spot)
+            {
+                int spotIndex = (room + 1) * 2 + spot * 10;
+                Antipod occupy = getOccupy(spotIndex);
+                if (occupy == room)
                 {
-                    nextMoves.emplace_back(antipod, end);
+                    // Field already occupied by correct antipod
+                    continue;
+                }
+                if (occupy != -1)
+                {
+                    // Field occupied with wrong antipod => room cannot be filled
+                    break;
+                }
+                // Spot in room is empty (and all spots above, too)
+                for (int antipod = 0; antipod < 2; antipod++)
+                {
+                    AntipodIndex index = room * 2 + antipod;
+                    Position position = antipods[index];
+                    if (position <= 10 || position % 10 != (room + 1) * 2)
+                    {
+                        if (isWayFree(position, spotIndex))
+                        {
+                            return Move{index, spotIndex};
+                        }
+                    }
                 }
             }
         }
-        return nextMoves;
+        return std::nullopt;
+    }
+
+    std::vector<Move> getCheapestMoves() const
+    {
+        std::vector<Move> moves;
+        for (int antipodType = 0; antipodType < 4; ++antipodType)
+        {
+            for (int antipod = 0; antipod < 2; ++antipod)
+            {
+                AntipodIndex index = antipodType * 2 + antipod;
+                Position start = antipods[index];
+                if (start <= 10)
+                {
+                    // start must be in room
+                    continue;
+                }
+                if (reachedFinal(index))
+                {
+                    continue;
+                }
+
+                for (int hallwayPos = 0; hallwayPos <= 10; ++hallwayPos)
+                {
+                    if (hallwayPos % 10 != start % 10 && isWayFree(start, hallwayPos))
+                    {
+                        moves.emplace_back(index, hallwayPos);
+                    }
+                }
+            }
+            if (!moves.empty())
+            {
+                break;
+            }
+        }
+        return moves;
+    }
+
+    int solve() const
+    {
+        if (isFinal())
+        {
+            return cost;
+        }
+        std::optional<Move> goToGoal = getGoGoals();
+        if (goToGoal.has_value())
+        {
+            Situation newSituation = applyMove(*this, goToGoal.value());
+            return newSituation.solve();
+        }
+
+        std::vector<Move> moves = getCheapestMoves();
+        int minimumCost = std::numeric_limits<int>::max();
+        for (Move move : moves)
+        {
+            Situation newSituation = applyMove(*this, move);
+            minimumCost = std::min(minimumCost, newSituation.solve());
+        }
+        return minimumCost;
     }
 };
-
-auto cost_compare = [](const Situation &a, const Situation &b)
-{ return a.cost < b.cost; };
-
-auto situation_compare = [](const Situation &a, const Situation &b)
-{ return a.antipods < b.antipods; }; // We want the smallest costs on top
 
 int main(int, char **)
 {
     Situation situation(situation_string);
-    std::vector<Situation> possibleSituations;
-    std::set<Situation, decltype(situation_compare)> visitedSituations;
+    int cost = situation.solve();
 
-    while (!situation.isFinal())
-    {
-        visitedSituations.insert(situation);
-        std::vector<Move> nextMoves = situation.getNextMoves();
-        for (const Move &nextMove : nextMoves)
-        {
-            Situation nextSituation(situation);
-            const Position &start = nextSituation.antipods[nextMove.index];
-            const Position &end = nextMove.end;
-            Antipod antipod = nextSituation.getOccupy(start);
-
-            nextSituation.cost += costPerMove.at(antipod) * Situation::countMoves(start, end);
-            nextSituation.antipods[nextMove.index] = end;
-
-            auto iter = std::find_if(std::begin(possibleSituations), std::end(possibleSituations), [&nextSituation](const Situation &situation)
-                                     { return nextSituation.antipods == situation.antipods; });
-            if (iter == std::end(possibleSituations))
-            {
-                if (!visitedSituations.contains(nextSituation))
-                {
-                    possibleSituations.push_back(nextSituation);
-                }
-            }
-            else
-            {
-                (*iter).cost = std::min(nextSituation.cost, (*iter).cost);
-            }
-        }
-        auto iter = std::min_element(std::begin(possibleSituations), std::end(possibleSituations), cost_compare);
-        situation = *iter;
-        possibleSituations.erase(iter);
-    }
-
-    std::cout << "The most energy efficient solution uses " << situation.cost << " energy" << std::endl;
+    std::cout << "The most energy efficient solution uses " << cost << " energy." << std::endl;
 }
