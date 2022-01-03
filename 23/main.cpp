@@ -39,7 +39,7 @@ struct Move
 struct Situation
 {
     // A1, A2, B1, B2, C1, C2, D1, D2
-    std::array<Position, 8> antipods;
+    std::array<Position, 4 * antipodsPerType> antipods;
     int cost = 0;
 
     auto operator<=>(const Situation &rhs) const = default;
@@ -51,10 +51,10 @@ struct Situation
 
         for (int x = 0; x < 4; ++x)
         {
-            for (int y = 0; y < 2; ++y)
+            for (int y = 0; y < antipodsPerType; ++y)
             {
                 int podType = situation_string[y + 2][x * 2 + 3] - 'A';
-                antipods[podType * 2 + foundOfType[podType]] = (y + 1) * 10 + (x + 1) * 2;
+                antipods[podType * antipodsPerType + foundOfType[podType]] = (y + 1) * 10 + (x + 1) * 2;
                 foundOfType[podType]++;
             }
         }
@@ -80,13 +80,13 @@ struct Situation
         Situation newSituation(situation);
         const Position start = situation.antipods[move.index];
         newSituation.antipods[move.index] = move.end;
-        newSituation.cost += Situation::countMoves(start, move.end) * costPerMove[move.index / 2];
+        newSituation.cost += Situation::countMoves(start, move.end) * costPerMove[move.index / antipodsPerType];
         return newSituation;
     }
 
     bool isInOwnRoom(const AntipodIndex &antipod) const
     {
-        return isRoom(antipods[antipod], antipod / 2);
+        return isRoom(antipods[antipod], antipod / antipodsPerType);
     }
 
     bool isFinal() const
@@ -105,7 +105,7 @@ struct Situation
     Antipod getOccupy(Position position) const
     {
         auto iter = std::find(std::begin(antipods), std::end(antipods), position);
-        return static_cast<Antipod>(iter == std::end(antipods) ? -1 : std::distance(std::begin(antipods), iter) / 2);
+        return static_cast<Antipod>(iter == std::end(antipods) ? -1 : std::distance(std::begin(antipods), iter) / antipodsPerType);
     }
 
     bool isEmpty(const Position &position) const
@@ -159,22 +159,25 @@ struct Situation
         if (isInOwnRoom(antipodIndex))
         {
             Position position = antipods[antipodIndex];
-            int spotInRoom = position / 10;
-            if (spotInRoom == 2)
+            Antipod type = static_cast<Antipod>(antipodIndex / antipodsPerType);
+            for (; position < (antipodsPerType + 1) * 10; position += 10)
             {
-                return true;
+                int occupy = getOccupy(position);
+                if (occupy != type)
+                {
+                    return false;
+                }
             }
-            AntipodIndex otherAntipodIndex = (antipodIndex % 2 == 0 ? antipodIndex + 1 : antipodIndex - 1);
-            return isInOwnRoom(otherAntipodIndex);
+            return true;
         }
         return false;
     }
 
     std::optional<Move> getGoGoals() const
     {
-        for (int room = 0; room < antipods.size() / 2; ++room)
+        for (int room = 0; room < antipods.size() / antipodsPerType; ++room)
         {
-            for (int spot = 2; spot > 0; --spot)
+            for (int spot = antipodsPerType; spot > 0; --spot)
             {
                 int spotIndex = (room + 1) * 2 + spot * 10;
                 Antipod occupy = getOccupy(spotIndex);
@@ -189,9 +192,9 @@ struct Situation
                     break;
                 }
                 // Spot in room is empty (and all spots above, too)
-                for (int antipod = 0; antipod < 2; antipod++)
+                for (int antipod = 0; antipod < antipodsPerType; antipod++)
                 {
-                    AntipodIndex index = room * 2 + antipod;
+                    AntipodIndex index = room * antipodsPerType + antipod;
                     Position position = antipods[index];
                     if (position <= 10 || position % 10 != (room + 1) * 2)
                     {
@@ -211,9 +214,9 @@ struct Situation
         std::vector<Move> moves;
         for (int antipodType = 0; antipodType < 4; ++antipodType)
         {
-            for (int antipod = 0; antipod < 2; ++antipod)
+            for (int antipod = 0; antipod < antipodsPerType; ++antipod)
             {
-                AntipodIndex index = antipodType * 2 + antipod;
+                AntipodIndex index = antipodType * antipodsPerType + antipod;
                 Position start = antipods[index];
                 if (start <= 10)
                 {
