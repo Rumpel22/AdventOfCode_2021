@@ -94,7 +94,9 @@ struct Situation
         const size_t end = antipods.size();
         for (AntipodIndex i = 0; i < end; ++i)
         {
-            if (!isInOwnRoom(i))
+            Position position = antipods[i];
+            int antipodType = i / 4;
+            if (position < 11 || (position % 10 != (antipodType + 1) * 2))
             {
                 return false;
             }
@@ -142,16 +144,21 @@ struct Situation
         return isEmpty(newPosition) && isWayFree(newPosition, end);
     }
 
-    static int countMoves(const Position &start, const Position &end)
+    static int countMoves(Position start, Position end)
     {
-        const int wayToHallway = start / 10;
-        const int wayIntoRoom = end / 10;
-        int wayInHallway = std::abs((start % 10) - (end % 10));
-        if (start == 10 || end == 10)
+        int count = 0;
+        while (start > 10)
         {
-            wayInHallway++;
+            count++;
+            start -= 10;
         }
-        return wayToHallway + wayInHallway + wayIntoRoom;
+        while (end > 10)
+        {
+            count++;
+            end -= 10;
+        }
+        count += std::abs(start - end);
+        return count;
     }
 
     bool reachedFinal(AntipodIndex antipodIndex) const
@@ -228,19 +235,24 @@ struct Situation
                     continue;
                 }
 
-                for (int hallwayPos = 0; hallwayPos <= 10; ++hallwayPos)
+                for (int hallwayPos = 1; hallwayPos <= 9; hallwayPos += 2)
                 {
-                    if (hallwayPos % 10 != start % 10 && isWayFree(start, hallwayPos))
+                    if (isWayFree(start, hallwayPos))
                     {
                         moves.emplace_back(index, hallwayPos);
                     }
                 }
-            }
-            if (!moves.empty())
-            {
-                break;
+                if (isWayFree(start, 0))
+                {
+                    moves.emplace_back(index, 0);
+                }
+                if (isWayFree(start, 10))
+                {
+                    moves.emplace_back(index, 10);
+                }
             }
         }
+
         return moves;
     }
 
