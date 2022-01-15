@@ -2,67 +2,78 @@
 
 #include <iostream>
 
-using boolMap = std::vector<std::vector<bool>>;
-
-boolMap getBoolMap(const std::vector<std::string> &input, char c)
+struct Map
 {
-    boolMap map;
-    for (const auto &line : input)
+    std::vector<bool> fields;
+    const size_t height;
+    const size_t width;
+
+    Map(const std::vector<std::string> &input, char c) : height(input.size()),
+                                                         width(input[0].size())
     {
-        map.push_back({});
-        auto &current = map.back();
-        for (const char ch : line)
+        fields.reserve(height * width);
+        for (const auto &line : input)
         {
-            current.push_back(c == ch);
+            for (const char ch : line)
+            {
+                fields.push_back(c == ch);
+            }
         }
     }
-    return map;
-}
+};
 
-boolMap move(const boolMap &movers, const boolMap &standingStill, bool goingEast)
+bool move(Map &movers, const Map &standingStill, bool goingEast)
 {
-    boolMap newSituation = boolMap(movers.size(), std::vector<bool>(movers[0].size(), false));
-    for (size_t y = 0; y < movers.size(); ++y)
+    auto newFields = std::vector(movers.fields.size(), false);
+    bool moved = false;
+
+    for (size_t y = 0; y < movers.height; ++y)
     {
-        size_t newY = goingEast ? y : ((y + 1) % movers.size());
-        for (size_t x = 0; x < movers[0].size(); ++x)
+        const size_t newY = goingEast ? y : ((y + 1) % movers.height);
+        const size_t newOffset = newY * movers.width;
+        const size_t offset = y * movers.width;
+        for (size_t x = 0; x < movers.width; ++x)
         {
-            if (!movers[y][x])
+            const size_t index = offset + x;
+            if (!movers.fields[index])
             {
                 continue;
             }
-            size_t newX = goingEast ? ((x + 1) % movers[0].size()) : x;
-            if (!movers[newY][newX] && !standingStill[newY][newX])
+
+            const size_t newX = goingEast ? ((x + 1) % movers.width) : x;
+            const size_t newIndex = newOffset + newX;
+            if (!movers.fields[newIndex] && !standingStill.fields[newIndex])
             {
-                newSituation[newY][newX] = true;
+                newFields[newIndex] = true;
+                moved = true;
             }
             else
             {
-                newSituation[y][x] = true;
+                newFields[index] = true;
             }
         }
     }
-    return newSituation;
+    movers.fields = std::move(newFields);
+    return moved;
 }
 
 int main(int, char **)
 {
-    boolMap south = getBoolMap(input, 'v');
-    boolMap east = getBoolMap(input, '>');
+    Map south(input, 'v');
+    Map east(input, '>');
 
     unsigned long long counter = 0;
     while (true)
     {
         ++counter;
 
-        auto newEast = move(east, south, true);
-        auto newSouth = move(south, newEast, false);
-        if (newEast == east && newSouth == south)
+        bool moved = false;
+        moved |= move(east, south, true);
+        moved |= move(south, east, false);
+        if (!moved)
         {
             break;
         }
-        east = std::move(newEast);
-        south = std::move(newSouth);
     }
     std::cout << "There is a full stop after " << counter << " iterations." << std::endl;
 }
